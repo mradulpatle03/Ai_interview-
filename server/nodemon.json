@@ -1,0 +1,8 @@
+{
+  "quiet": true,
+  "watch": ["src"],
+  "ext": "js,json",
+  "env": {
+    "DOTENV_CONFIG_QUIET": "true"
+  }
+}
