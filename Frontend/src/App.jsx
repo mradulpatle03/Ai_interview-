@@ -13,16 +13,16 @@ function PrivateRoute({ children }) {
   return token ? children : <Navigate to="/login" />;
 }
 
-const App = () => {
+export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        
+        {/* Public Pages */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        
+        {/* Private Pages with Layout */}
         <Route
           element={
             <PrivateRoute>
@@ -38,6 +38,4 @@ const App = () => {
       </Routes>
     </BrowserRouter>
   );
-};
-
-export default App;
+}
