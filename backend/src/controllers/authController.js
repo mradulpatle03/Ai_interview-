@@ -1,174 +1,141 @@
-const User = require('../models/User');
-const { generateToken } = require('../utils/jwt');
-const { validationResult } = require('express-validator');
+const User = require("../models/User");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 
-// @desc    Register user
-// @route   POST /api/auth/register
-// @access  Public
-const register = async (req, res) => {
+// JWT secret (in production, store in env variable)
+const JWT_SECRET = process.env.JWT_SECRET || "thisismysecret"; 
+
+// --------- SIGNUP ---------
+const signup = async (req, res) => {
   try {
-    // Check for validation errors
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation Error',
-        errors: errors.array()
-      });
-    }
-
-    const { name, email, password } = req.body;
+    const { name, email, password, experienceLevel, preferences } = req.body;
 
     // Check if user exists
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'User already exists with this email'
-      });
-    }
+    if (existingUser)
+      return res.status(400).json({ message: "User already exists" });
 
-    // Create user
-    const user = await User.create({
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    // Create new user
+    const newUser = new User({
       name,
       email,
-      password
+      passwordHash,
+      experienceLevel,
+      preferences
     });
 
-    // Generate token
-    const token = generateToken({ id: user._id });
+    await newUser.save();
 
-    res.status(201).json({
-      success: true,
-      message: 'User registered successfully',
+    // Return success response
+    res.status(201).json({ message: "User created successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// --------- LOGIN ---------
+const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Find user
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: "Invalid credentials" });
+
+    // Compare password
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+
+    // Create JWT
+    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    // Send user info + token
+    res.json({
       token,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-        profile: user.profile,
+        experienceLevel: user.experienceLevel,
         preferences: user.preferences
       }
     });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: 'Server Error'
-    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-// @desc    Login user
-// @route   POST /api/auth/login
-// @access  Public
-const login = async (req, res) => {
+const logout = async (req, res) => {
+  // frontend job (remove token)
+  res.json({ message: "Logged out successfully" });
+};
+
+// --------- REQUEST PASSWORD RESET ---------
+const requestPasswordReset = async (req, res) => {
+  const { email } = req.body;
+
   try {
-    // Check for validation errors
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation Error',
-        errors: errors.array()
-      });
-    }
+    const user = await User.findOne({ email });
+    if (!user)
+      return res.status(400).json({ message: "User with this email not found" });
 
-    const { email, password } = req.body;
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const resetTokenExpiry = Date.now() + 3600000; // 1 hour
 
-    // Check for user (include password for comparison)
-    const user = await User.findOne({ email }).select('+password');
-    
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
-    }
-
-    // Check password
-    const isMatch = await user.matchPassword(password);
-    
-    if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
-    }
-
-    // Update last login
-    user.lastLogin = new Date();
+    user.resetToken = resetToken;
+    user.resetTokenExpiry = resetTokenExpiry;
     await user.save();
 
-    // Generate token
-    const token = generateToken({ id: user._id });
+    // TODO: send resetToken via email (mock for now)
+    console.log(`Password reset token for ${email}: ${resetToken}`);
 
-    res.status(200).json({
-      success: true,
-      message: 'Login successful',
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        profile: user.profile,
-        preferences: user.preferences,
-        lastLogin: user.lastLogin
-      }
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: 'Server Error'
-    });
+    res.json({ message: "Password reset token sent to email" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-// @desc    Get current user
-// @route   GET /api/auth/me
-// @access  Private
-const getMe = async (req, res) => {
+// --------- RESET PASSWORD ---------
+const resetPassword = async (req, res) => {
+  const { token, newPassword } = req.body;
+
   try {
-    const user = await User.findById(req.user.id);
-    
-    res.status(200).json({
-      success: true,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        profile: user.profile,
-        preferences: user.preferences,
-        lastLogin: user.lastLogin,
-        createdAt: user.createdAt
-      }
+    const user = await User.findOne({
+      resetToken: token,
+      resetTokenExpiry: { $gt: Date.now() },
     });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: 'Server Error'
-    });
+
+    if (!user) return res.status(400).json({ message: "Invalid or expired token" });
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    user.passwordHash = await bcrypt.hash(newPassword, salt);
+
+    // Clear reset token
+    user.resetToken = undefined;
+    user.resetTokenExpiry = undefined;
+
+    await user.save();
+
+    res.json({ message: "Password reset successful" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-// @desc    Logout user
-// @route   POST /api/auth/logout
-// @access  Private
-const logout = async (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'User logged out successfully'
-  });
-};
-
-module.exports = {
-  register,
-  login,
-  getMe,
-  logout
-};
+module.exports = { signup, login,logout,
+  requestPasswordReset,
+  resetPassword, };

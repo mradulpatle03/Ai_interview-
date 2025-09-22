@@ -1,15 +1,35 @@
-export default function Navbar() {
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { logout } from "../slices/authSlice";
+
+const Navbar = () => {
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate("/login");
+  };
+
   return (
-    <nav className="h-14 bg-blue-600 text-white flex items-center justify-between px-6 shadow-md">
-      <h1 className="font-bold text-xl">AI Interview Prep</h1>
-      <div className="flex items-center space-x-4">
-        <span className="hidden sm:block">Hi, User 👋</span>
-        <img
-          src="https://i.pravatar.cc/40"
-          alt="avatar"
-          className="w-8 h-8 rounded-full border"
-        />
-      </div>
+    <nav>
+      <Link to="/">Home</Link>
+      {isAuthenticated ? (
+        <>
+          <Link to="/profile">Profile</Link>
+          <button onClick={handleLogout}>Logout</button>
+          <span>Welcome, {user.name}</span>
+        </>
+      ) : (
+        <>
+          <Link to="/login">Login</Link>
+          <Link to="/register">Register</Link>
+        </>
+      )}
     </nav>
   );
-}
+};
+
+export default Navbar;
