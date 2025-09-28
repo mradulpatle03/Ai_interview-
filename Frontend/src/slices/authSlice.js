@@ -1,12 +1,11 @@
+
+// src/redux/authSlice.js
 import { createSlice } from "@reduxjs/toolkit";
 
-const token = localStorage.getItem("token") ? localStorage.getItem("token") : null;
-const user = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : null;
-
 const initialState = {
-  user: user,
-  token: token,
-  isAuthenticated: !!token,
+  user: JSON.parse(localStorage.getItem("user")) || null,
+  token: localStorage.getItem("token") || null,
+  isAuthenticated: !!localStorage.getItem("token"),
 };
 
 const authSlice = createSlice({
@@ -14,21 +13,31 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     setCredentials: (state, action) => {
-      state.user = action.payload.user;
-      state.token = action.payload.token;
+      const { user, token } = action.payload;
+      state.user = user;
+      state.token = token;
       state.isAuthenticated = true;
-      localStorage.setItem("token", action.payload.token);
-      localStorage.setItem("user", JSON.stringify(action.payload.user));
+
+      // persist in localStorage
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("token", token);
     },
     logout: (state) => {
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
-      localStorage.removeItem("token");
+
       localStorage.removeItem("user");
+      localStorage.removeItem("token");
+    },
+    updateUser: (state, action) => {
+      // update only user info without touching token
+      state.user = { ...state.user, ...action.payload };
+      localStorage.setItem("user", JSON.stringify(state.user));
     },
   },
 });
 
-export const { setCredentials, logout } = authSlice.actions;
+export const { setCredentials, logout, updateUser } = authSlice.actions;
 export default authSlice.reducer;
+
