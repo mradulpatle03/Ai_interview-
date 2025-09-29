@@ -5,6 +5,7 @@ const morgan = require('morgan');
 
 const authRoutes = require('./routes/auth.js');
 const userRoutes = require("./routes/userRoutes");
+const quizRoutes = require("./routes/quiz.js");
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.get('/health', (_req, res) =>
 // ----- API Routes -----
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/quiz", quizRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error(err);
