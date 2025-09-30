@@ -41,20 +41,20 @@ export default function Register() {
   };
 
   return (
-    <div className="h-full flex flex-col md:flex-row">
+    <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left Panel: Welcome / Illustration */}
-      <div className="md:w-1/2 flex flex-col justify-center items-center bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 text-white p-10 h-full">
+      <div className="md:w-1/2 flex flex-col justify-center items-center bg-gradient-to-br from-yellow-800 via-yellow-700 to-black/60 text-yellow-50 p-10">
         <h1 className="text-4xl md:text-5xl font-extrabold mb-4">Join Our Community!</h1>
         <p className="text-lg md:text-xl opacity-90 text-center">
           Create your account and start exploring new possibilities.
         </p>
-        <div className="mt-10 w-full md:w-3/4">
-          <img
-            src="https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=800&q=80"
-            alt="Welcome illustration"
-            className="rounded-xl shadow-2xl"
-          />
-        </div>
+        <div className="mt-8 w-full md:w-3/4 flex justify-center">
+      <img
+        src="man.jpg"
+        alt="Illustration"
+        className="rounded-xl shadow-2xl max-h-[400px] w-auto object-contain"
+      />
+    </div>
       </div>
 
       {/* Right Panel: Register Form */}
@@ -106,14 +106,14 @@ export default function Register() {
 
           <button
             type="submit"
-            className="w-full py-3 rounded-2xl bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 text-white font-semibold shadow-lg hover:scale-105 transform transition"
+            className="w-full py-3 rounded-2xl bg-gradient-to-br from-yellow-800 via-yellow-700 to-black/60 text-yellow-50 font-semibold shadow-lg hover:scale-105 transform transition"
           >
             Sign Up
           </button>
 
           <p className="text-center text-gray-500">
             Already have an account?{" "}
-            <Link to={"/login"} className="text-purple-600 font-medium hover:underline">
+            <Link to={"/login"} className="text-yellow-600 font-medium hover:underline">
               Log in
             </Link>
           </p>
